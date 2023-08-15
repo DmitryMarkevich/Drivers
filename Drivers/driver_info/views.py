@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from rest_framework import generics
 from datetime import datetime
+import pytz
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -17,24 +18,13 @@ from .models import DriverLog
 
 class DriverAPIView(APIView):
     def get(self, request, driver_id):
-        queryset = DriverLog.objects.values('create_date', 'driver_id', 'status').filter(driver_id=driver_id)
-        last_record = queryset.latest('create_date')
-        delta_time = None
+        queryset = list(DriverLog.objects.values('create_date', 'driver_id', 'status').filter(driver_id=driver_id))
+        id = driver_id
         data = {}
-        for state in ('s', 'f', 'o'):
-            for q in queryset:
-                if True:
-                    if q['status'] == state:
-                        delta_time = q['create_date']
-                    elif q['status'] != state and delta_time is not None:
-                        delta_time = q['create_date'] - delta_time
-                        round_time = round(delta_time.total_seconds() / 3600, 2)
-                        try:
-                            data[state] += round_time
-                        except KeyError:
-                            data[state] = round_time
-                        delta_time = None
-                else:
-                    pass
+        for s in ('s', 'f', 'o'):
+            data[s] = round(sum([(queryset[(queryset.index(q) + 1)]['create_date'] - q['create_date']).total_seconds()
+                                 if queryset.index(q) < len(queryset) - 1 else (
+                    datetime.now(pytz.utc) - q['create_date']).total_seconds()
+                                 for q in queryset if q['status'] == s]) / 3600, 2)
 
-        return Response({'driver_id': driver_id, **data})
+        return Response({'driver_id': driver_id, **data, })
