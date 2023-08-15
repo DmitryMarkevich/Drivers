@@ -18,43 +18,19 @@ from .models import DriverLog
 class DriverAPIView(APIView):
     def get(self, request, driver_id):
         queryset = DriverLog.objects.values('create_date', 'driver_id', 'status').filter(driver_id=driver_id)
-        hours_worked = 0
-        delta_time = 0
-        for t in queryset:
-            if t['status'] == 's':
-                delta_time = t['create_date']
-            if t['status'] == 'f':
-                delta_time = t['create_date'] - delta_time
+        delta_time = None
+        data = {}
+        for stat in ('s', 'f', 'o'):
+            for q in queryset:
+                if q['status'] == stat:
+                    delta_time = q['create_date']
+                elif q['status'] != stat and delta_time != None:
+                    delta_time = q['create_date'] - delta_time
+                    round_time = round(delta_time.total_seconds() / 3600, 2)
+                    try:
+                        data[stat] += round_time
+                    except KeyError:
+                        data[stat] = round_time
+                    delta_time = None
 
-        hours_worked = delta_time
-
-        # Попытка обработать последнюю запись относительно текущего времени
-        # try:
-        #     hours_worked = round(hours_worked.total_seconds() / 3600, 2)
-        # except AttributeError:
-        #     today = datetime.now()
-        #     t1 = today - t['create_date']
-        #     print(t1)
-        #     hours_worked = round(t1.total_seconds() / 3600, 2)
-
-        hours_relax = 0
-        for t in queryset:
-            if t['status'] == 'f':
-                delta_time = t['create_date']
-            if t['status'] in ('s', 'o'):
-                delta_time = t['create_date'] - delta_time
-            hours_relax = delta_time
-
-        hours_off = 0
-        for t in queryset:
-            if t['status'] == 'o':
-                delta_time = t['create_date']
-            if t['status'] == 's':
-                delta_time = t['create_date'] - delta_time
-            hours_off = delta_time
-
-        return Response({'driver_id': driver_id,
-                         'hours_worked': round(hours_worked.total_seconds() / 3600, 2),
-                         'hours_relax': round(hours_relax.total_seconds() / 3600, 2),
-                         'hours_off': round(hours_off.total_seconds() / 3600, 2),
-                         })
+        return Response({'driver_id': driver_id, **data})
