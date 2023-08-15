@@ -20,17 +20,17 @@ class DriverAPIView(APIView):
         queryset = DriverLog.objects.values('create_date', 'driver_id', 'status').filter(driver_id=driver_id)
         delta_time = None
         data = {}
-        for stat in ('s', 'f', 'o'):
+        for state in ('s', 'f', 'o'):
             for q in queryset:
-                if q['status'] == stat:
+                if q['status'] == state:
                     delta_time = q['create_date']
-                elif q['status'] != stat and delta_time != None:
+                elif q['status'] != state and delta_time != None:
                     delta_time = q['create_date'] - delta_time
                     round_time = round(delta_time.total_seconds() / 3600, 2)
                     try:
-                        data[stat] += round_time
+                        data[state] += round_time
                     except KeyError:
-                        data[stat] = round_time
+                        data[state] = round_time
                     delta_time = None
 
         return Response({'driver_id': driver_id, **data})
