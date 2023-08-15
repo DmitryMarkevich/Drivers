@@ -9,7 +9,7 @@ from .views import *
 
 
 urlpatterns = [
-    path('api/driver_info/<int:driver_id>/', DriverAPIView.as_view()),
+    path('api/v1/driver_info/<int:driver_id>/', DriverAPIView.as_view()),
 ]
 
 # if settings.DEBUG:
