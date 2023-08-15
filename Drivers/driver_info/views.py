@@ -12,10 +12,6 @@ from .models import DriverLog
 
 # from .serializers import DriverSerializer
 
-
-# Create your views here.
-
-
 class DriverAPIView(APIView):
     def get(self, request, driver_id):
         queryset = list(DriverLog.objects.values('create_date', 'driver_id', 'status').filter(driver_id=driver_id))
